@@ -12,7 +12,15 @@ class Executor(object):
     def _ofkey(self, fname):
         vfilename, _ = os.path.splitext(fname)
         return vfilename.split('/')[-1]
-         
+       
+    def _peak_file_name(self, obj_list):
+        copy_list = obj_list
+        head = next(copy_list, None)
+        if(head != None):
+            return head['full_path']
+        else:
+            return "error" 
+        
 
     def get_rect_coordinates(self, obj, obj_look_ahead, x_max,y_max,frame_count):
         xmin = int(obj['xmin']*x_max)
@@ -31,6 +39,11 @@ class Executor(object):
             xmax = int(xmax + frame_count * (obj_look_ahead['xmax']*x_max - obj['xmax']*x_max)/30)
             ymax = int(ymax + frame_count * (obj_look_ahead['ymax']*y_max - obj['ymax']*y_max)/30)
         
+        xmin = xmin if xmin > 0 else 0
+        ymin = ymin if ymin > 0 else 0
+        xmax = xmax if xmax < x_max else int(x_max)
+        ymax = ymax if ymax < y_max else int(y_max)        
+                
         return ((xmin,ymin), (xmax,ymax))
 
          
@@ -43,10 +56,17 @@ class Executor(object):
         self.fieldnames = ("timestamp", "class_name", "object_id", "object_presence", "xmin", "xmax", "ymin", "ymax")
         
     
-    def listVideos(self):
+    def list_videos(self):
         video_list = self.db.list_all_videos()
         for r in video_list:
             print (r['video_file'] + r['ext'])
+
+
+    def list_classes(self):
+        class_list = self.db.find_list_of_classes()
+        for r in class_list:
+            print (r)
+
 
     
     def process_csv_file(self,csvfname, vfname):
@@ -60,7 +80,7 @@ class Executor(object):
             }
         
         if(csvfname == None):
-            print("Warning: csv file has not been specified. Searching for csvfile with same name as video_file")
+            #print("Warning: csv file has not been specified. Searching for csvfile with same name as video_file")
             csvfname = vpath + ".csv"
                 
             
@@ -94,9 +114,11 @@ class Executor(object):
 
     def find_all_objects(self, args):
         myList = self.db.search_by_objects(args.object_class)
-        for i in myList:
-            print ("Found %d instances of %s" % (i.count(), args.object_class))
-            self.mark_object_in_video(i,args)
+        for obj_list in myList:
+            if (obj_list.count() != 0 ):
+                fn = self._peak_file_name(obj_list)
+                print ("Found %d instances of %s in file %s" % (obj_list.count(), args.object_class, fn))
+                self.mark_object_in_video(obj_list,args)
 
 
     def object_exists_in_time_window(self, obj_list, args):
@@ -110,11 +132,19 @@ class Executor(object):
                 
         
 
-    def find_time(self,args):
-        myList = self.db.find_list_of_classes_in_file_file(self._ofkey(args.video_name))
+    def get_time_slice(self,args):
+        myList = self.db.find_list_of_classes_in_file(self._ofkey(args.video_name))
+        
+        atLeastOnce = False        
+
         for obj_list in myList:            
             if(self.object_exists_in_time_window(obj_list, args)):
                 self.mark_oject_in_video_time(args, obj_list)
+                atLeastOnce = True
+        
+        if (atLeastOnce == False):
+            self.mark_oject_in_video_time(args, None)
+            
         
 
         
@@ -122,22 +152,30 @@ class Executor(object):
     def mark_oject_in_video_time(self, args, obj_list):
 
         # init
-        w = None
+        w = None        
+        obj_cls_name = "None"
+        obj_processed = False
+        obj = None
+        frame_count = 0 #for interpolation
+        obj_look_ahead = None
         
-        if (args.a == True):
+        
+        if (obj_list != None):
             obj_processed = False
             obj = next(obj_list, None)
             frame_count = 0 #for interpolation
             obj_look_ahead = next(obj_list, None)
-        
-
+                
+            if (obj != None):
+                obj_cls_name = obj["class_name"]
+            
         # get the outpuf file name
         of_key = self._ofkey(args.video_name)
         
         if (args.od == ""):
-            ofname = "./" + of_key + "-" + obj["class_name"] + "-" + str(args.start_time) + "-"  + str(args.end_time) + ".mp4"
+            ofname = "./" + of_key + "-" + obj_cls_name + "-" + str(args.start_time) + "-"  + str(args.end_time) + ".mp4"
         else:
-            ofname = args.od + "/" + of_key + "-" + obj["class_name"] + "-" + str(args.start_time) + "-"  + str(args.end_time) + ".mp4"            
+            ofname = args.od + "/" + of_key + "-" + obj_cls_name + "-" + str(args.start_time) + "-"  + str(args.end_time) + ".mp4"            
 
         print ("Creating new file: %s" % ofname)
         
@@ -215,9 +253,17 @@ class Executor(object):
 
         ofname = None
         obj_processed = False
-        obj = next(obj_list, None)
+        obj  = None
         frame_count = 0 #for interpolation
-        obj_look_ahead = next(obj_list, None)
+        obj_look_ahead = None
+        
+        
+        if (obj_list != None):
+            obj_processed = False
+            obj = next(obj_list, None)
+            frame_count = 0 #for interpolation
+            obj_look_ahead = next(obj_list, None)
+
         
         if(obj == None):
             return 
