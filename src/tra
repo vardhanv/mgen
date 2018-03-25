@@ -1,0 +1,31 @@
+
+from queries import search_by_objects
+
+'''
+cap = cv2.VideoCapture("../data/L8Q0lJgaUi4.mp4")
+
+print ("Width = %d" % cap.get(cv2.CAP_PROP_FRAME_WIDTH)) 
+print ("Height = %d" % cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+  
+while (cap.isOpened()):
+    ret, frame = cap.read()
+    
+    gray = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+    
+    cv2.rectangle(gray, (0,0), (200,200), (0,255,0), 3)
+    
+    cv2.imshow('frame', gray)
+    
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+    
+
+cap.release()
+cv2.destroyAllWindows()
+
+'''
+
+    
+    
+    
+    
