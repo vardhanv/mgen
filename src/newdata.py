@@ -46,8 +46,15 @@ class Executor(object):
                 
         return ((xmin,ymin), (xmax,ymax))
 
-         
-         
+    def _draw_rectangle(self, obj, annotate, obj_look_ahead, x_max, y_max, frame_count, cv2, frame):
+        if(obj["object_presence"] == "present" and annotate == True):
+            (Xcord, Ycord) = self.get_rect_coordinates(obj, obj_look_ahead, x_max, y_max, frame_count)
+            cv2.rectangle(frame, Xcord, Ycord, (0,255,0), 2)
+            return True
+        else:
+            return False
+                                                                                                     
+                  
 
     
     def __init__(self, myDb):
@@ -200,12 +207,9 @@ class Executor(object):
                 if(obj != None and args.a == True):
                     if(c_pos < obj['timestamp']):
                         True # Do nothing   
-                    elif(c_pos >= obj['timestamp'] and c_pos < obj['timestamp']+1000 ):                
-                        if(obj["object_presence"] == "present"):
-                            frame_count = frame_count + 1                
-                            (Xcord, Ycord) = self.get_rect_coordinates(obj, obj_look_ahead, x_max, y_max, frame_count)
-                            cv2.rectangle(frame, Xcord, Ycord, (0,255,0), 2)
-                                                                                                     
+                    elif(c_pos >= obj['timestamp'] and c_pos < obj['timestamp']+1000 ):
+                        if(self._draw_rectangle(obj, args.a, obj_look_ahead, x_max, y_max, frame_count, cv2, frame) == True):
+                            frame_count = frame_count + 1                        
                     else :
                         obj_processed = True
                                             
@@ -296,13 +300,10 @@ class Executor(object):
                 # do nothinng
                 True
             elif(c_pos >= obj['timestamp'] and c_pos < obj['timestamp']+1000):
-                if(obj['object_presence'] == "present" and args.a == True):
+
+                if(self._draw_rectangle(obj, args.a, obj_look_ahead, x_max, y_max, frame_count, cv2, frame) == True):
                     frame_count = frame_count + 1
-                    
-                    (Xcord, Ycord) = self.get_rect_coordinates(obj, obj_look_ahead, x_max, y_max, frame_count)
-                                            
-                    cv2.rectangle(frame, Xcord, Ycord, (0,255,0), 2)
-                
+                                
                 # Start creating the video segments
                 if(ofname == None): 
                     if (args.od == ""):
