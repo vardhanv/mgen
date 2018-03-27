@@ -191,7 +191,8 @@ class Executor(object):
         y_max  = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
         x_max  = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
         fps    = cap.get(cv2.CAP_PROP_FPS)
-        fourcc = cap.get(cv2.CAP_PROP_FOURCC)
+        #fourcc = cap.get(cv2.CAP_PROP_FOURCC)
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 
         frames_available   =  True  
         
@@ -280,7 +281,9 @@ class Executor(object):
         y_max  = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
         x_max  = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
         fps    = cap.get(cv2.CAP_PROP_FPS)
-        fourcc = cap.get(cv2.CAP_PROP_FOURCC)
+        #fourcc = cap.get(cv2.CAP_PROP_FOURCC)
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        
                 
     
         while(cap.isOpened()):
@@ -297,8 +300,12 @@ class Executor(object):
             '''
             
             if (c_pos < obj['timestamp']):
-                # do nothinng
-                True
+
+                if (args.display == False):
+                    # seek to position
+                    seek_pos = int(obj['timestamp']/(1000/fps))
+                    cap.set(cv2.CAP_PROP_POS_FRAMES, seek_pos)
+                
             elif(c_pos >= obj['timestamp'] and c_pos < obj['timestamp']+1000):
 
                 if(self._draw_rectangle(obj, args.a, obj_look_ahead, x_max, y_max, frame_count, cv2, frame) == True):
